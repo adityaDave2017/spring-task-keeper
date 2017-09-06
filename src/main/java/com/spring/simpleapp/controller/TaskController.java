@@ -1,9 +1,14 @@
 package com.spring.simpleapp.controller;
 
 import java.util.ArrayList;
+import java.util.Enumeration;
 
 import javax.servlet.http.HttpSession;
 
+import com.spring.simpleapp.dao.AccountDAO;
+import com.spring.simpleapp.dao.TaskDAO;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,6 +26,16 @@ import com.spring.simpleapp.model.Task;
 @RequestMapping(value = "/tasker")
 public class TaskController {
 
+    private static final String ACCOUNT = "USER_ACCOUNT";
+    private static final String USERNAME = "USERNAME";
+    private static final String TASK_LIST = "TASKS_LIST";
+
+    @Autowired
+    private TaskDAO taskDao;
+
+    @Autowired
+    private AccountDAO accountDao;
+
     @RequestMapping(method = RequestMethod.GET)
     public ModelAndView goToHome() {
         return new ModelAndView("home", "command", new Login());
@@ -28,12 +43,15 @@ public class TaskController {
 
 
     @RequestMapping(value = "/login", method = RequestMethod.POST)
-    public ModelAndView processCredentials(@ModelAttribute("SpringWeb") Login login, ModelMap model) {
+    public ModelAndView processCredentials(@ModelAttribute("SpringWeb") Login login, HttpSession session, ModelMap model) {
         System.out.println(login.toString());
-
         // Add username and password verification here...
-        if (login.getUsername().equals(login.getPassword())) {
-            return new ModelAndView("redirect:tasks", "command", new Login());
+        Account account = accountDao.getAccount(login);
+        if (account != null) {
+            System.out.println(account.toString());
+            session.setAttribute(ACCOUNT, account);
+            System.out.println("MAX TIME INTERVAL ... " + session.getMaxInactiveInterval());
+            return new ModelAndView("forward:tasks", "command", new Login());
         }
         return new ModelAndView("login-error", "command", new Login());
     }
@@ -46,10 +64,12 @@ public class TaskController {
 
 
     @RequestMapping(value = "/registerProcess", method = RequestMethod.POST)
-    public ModelAndView registerUser(@ModelAttribute("account") Account account, ModelMap model) {
+    public ModelAndView registerUser(@ModelAttribute("account") Account account, HttpSession session, ModelMap model) {
         // create account by adding details to database and show tasks page
         System.out.println(account);
-        return new ModelAndView("redirect:tasks");
+        accountDao.saveAccount(account);
+        session.setAttribute(ACCOUNT, account);
+        return new ModelAndView("forward:tasks");
     }
 
 
@@ -57,14 +77,10 @@ public class TaskController {
     public ModelAndView getTasks(ModelMap model, HttpSession session) {
         // Retrieve tasks for the logged in user, if none are
         // present keep the list empty. Tasks sorted on isDone field.
-        ArrayList<Task> tasks = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            Task task = new Task();
-            task.setDone(i % 2 == 0);
-            task.setTaskDesc("This is task no. " + i);
-            tasks.add(task);
-        }
-        session.setAttribute("TASKS_LIST", tasks);
+        Account account = (Account) session.getAttribute(ACCOUNT);
+        ArrayList<Task> tasks = (ArrayList<Task>) taskDao.listTaskByAccount(account.getAccountId());
+        session.setAttribute(TASK_LIST, tasks);
+        session.setAttribute(ACCOUNT, account);
         return new ModelAndView("tasks-list", "tasks", tasks);
     }
 
@@ -72,10 +88,19 @@ public class TaskController {
     @RequestMapping(value = "/addTask", method = RequestMethod.POST)
     public ModelAndView addTask(@RequestParam("taskDesc") String taskDesc, HttpSession session) {
         // Add the task to the database to corresponding user account
+        if (session.isNew()) {
+            System.out.println("The session has been created newly...");
+        }
+        Account account = (Account) session.getAttribute(ACCOUNT);
         Task t = new Task();
+//        t.setAccountId(account.getAccountId());
         t.setTaskDesc(taskDesc);
-        ArrayList<Task> tasks = (ArrayList<Task>) session.getAttribute("TASKS_LIST");
+//        taskDao.saveTask(t);
+        ArrayList<Task> tasks = (ArrayList<Task>) session.getAttribute(TASK_LIST);
         if (tasks != null) {
+            tasks.add(t);
+        } else {
+            tasks = new ArrayList<>();
             tasks.add(t);
         }
         return new ModelAndView("tasks-list", "tasks", tasks);
@@ -84,7 +109,7 @@ public class TaskController {
 
     @RequestMapping(value = "/bye")
     public ModelAndView logout(ModelMap model, HttpSession session) {
-        session.removeAttribute("TASKS_LIST");
+        session.invalidate();
         return new ModelAndView("bye", "command", new Login());
     }
 

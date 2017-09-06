@@ -1,3 +1,4 @@
+<%@ page import="java.util.Enumeration" %>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
          pageEncoding="ISO-8859-1" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -12,7 +13,15 @@
 
 <a href="/SpringCRUDApp/tasker/bye">Logout</a><br><br>
 
-<h2>Your tasks</h2>
+<h2>Your tasks</h2><br>
+
+<%
+    Enumeration<String> s = session.getAttributeNames();
+    while (s.hasMoreElements()) {
+        String str = s.nextElement();
+        System.out.print(str + "$$$" + session.getAttribute(str));
+    }
+%>
 
 <table>
     <c:choose>

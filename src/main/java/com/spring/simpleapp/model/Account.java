@@ -1,21 +1,25 @@
 package com.spring.simpleapp.model;
 
 
-import javax.annotation.Generated;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import org.hibernate.annotations.GenericGenerator;
+
+import javax.persistence.*;
+import java.io.Serializable;
 
 
 @Entity
 @Table(name = "account")
-public class Account {
+@NamedQueries({
+        @NamedQuery(name = "accountForUserName", query = "FROM Account WHERE username=:username AND password=:password"),
+        @NamedQuery(name = "deleteUser", query = "DELETE FROM Account WHERE username=:username")
+})
+public class Account implements Serializable {
 
     @Id
-    @Generated(value = "assigned")
+    @GenericGenerator(name="kaugen", strategy = "increment")
+    @GeneratedValue(generator = "kaugen")
     @Column(name = "intAccId")
-    private Integer accountId;
+    private int accountId;
 
     @Column(name = "strName")
     private String name;
@@ -31,6 +35,14 @@ public class Account {
 
     @Column(name = "strMobileNo")
     private String mobileNo;
+
+    public int getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(int accountId) {
+        this.accountId = accountId;
+    }
 
     public String getName() {
         return name;
@@ -74,8 +86,14 @@ public class Account {
 
     @Override
     public String toString() {
-        return "Account [name=" + name + ", username=" + username + ", password=" + password + ", emailId=" + emailId
-                + ", mobileNo=" + mobileNo + "]";
+        return "Account{" +
+                "accountId=" + accountId +
+                ", name='" + name + '\'' +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", emailId='" + emailId + '\'' +
+                ", mobileNo='" + mobileNo + '\'' +
+                '}';
     }
 
 }

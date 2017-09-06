@@ -1,5 +1,6 @@
 package com.spring.simpleapp.model;
 
+
 public class Login {
 
     private String username;

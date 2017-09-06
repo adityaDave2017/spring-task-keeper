@@ -18,4 +18,34 @@
         <property name="suffix" value=".jsp"/>
     </bean>
 
+    <!-- Configuring database source -->
+    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+        <property name="url" value="jdbc:mysql://localhost:3306/spring_tasks" />
+        <property name="username" value="jump" />
+        <property name="password" value="secret" />
+    </bean>
+
+    <!-- Add support for Hibernate Factory Bean -->
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="configLocation" value="classpath:hibernate.cfg.xml" />
+    </bean>
+
+
+    <!-- Add support for transaction management -->
+    <bean id="transactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory" />
+    </bean>
+
+
+    <!-- Configuration for user dao -->
+    <bean id="taskDao" class="com.spring.simpleapp.dao.TaskDAOImpl">
+        <constructor-arg ref="sessionFactory"/>
+    </bean>
+
+    <bean id="accountDao" class="com.spring.simpleapp.dao.AccountDAOImpl">
+        <constructor-arg ref="sessionFactory" />
+    </bean>
+
 </beans>
